@@ -4,5 +4,9 @@
 .venv/
 __pycache__
 _build/
+data/
 flake.lock
 flake.nix
+
+# Allow .gitkeep in data directory to keep the project structure
+!data/.gitkeep
