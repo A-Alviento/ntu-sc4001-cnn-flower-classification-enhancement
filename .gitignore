@@ -1,1 +1,8 @@
+.direnv/
+.envrc
+.ipynb_checkpoints/
+.venv/
 __pycache__
+_build/
+flake.lock
+flake.nix
