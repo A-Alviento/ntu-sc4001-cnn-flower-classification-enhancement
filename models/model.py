@@ -61,10 +61,11 @@ class CustomCNN(nn.Module):
         flatten = self.flatten(p5)
         
         # Dynamic Fully Connected Layers
-        for fc in self.fcs:
+        for i, fc in enumerate(self.fcs):
             x = F.relu(fc(flatten))
-            x = self.dropout(x)
-            flatten = x  # Update flatten for the next layer
+            if i < 2:
+                x = self.dropout(x)
+            flatten = x # Update flatten for the next layer
 
          # Output layer
         x = self.fc_final(flatten)
