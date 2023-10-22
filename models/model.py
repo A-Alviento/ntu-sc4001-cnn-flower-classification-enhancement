@@ -70,7 +70,7 @@ class CustomCNN(nn.Module):
         x = self.fc_final(flatten)
 
         # Softmax applied to the output layer
-        out = F.softmax(x, dim=1)
+        out = x
         
         return conv1, p1, conv2, p2, conv3, p3, conv4, conv5, p5, out
 
