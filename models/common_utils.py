@@ -44,7 +44,7 @@ class EarlyStopper:
 
 
 # Training step
-def train_step(model, trainloader, optimizer, device, loss):
+def train_step(model, trainloader, optimizer, device, lossfn):
     model.train() # set model to training mode
     total_loss = 0.0 
 
@@ -57,7 +57,7 @@ def train_step(model, trainloader, optimizer, device, loss):
 
         # Forward pass
         _, _, _, _, _, _, _, _, _, outputs = model(inputs)
-        loss = loss(outputs, labels) 
+        loss = lossfn(outputs, labels) 
 
         # Backward pass and optimization
         loss.backward()
@@ -70,7 +70,7 @@ def train_step(model, trainloader, optimizer, device, loss):
 
 
 # Test step
-def val_step(model, valloader, loss, device):
+def val_step(model, valloader, lossfn, device):
     model.eval() # set model to evaluation mode
     total_loss = 0.0
     correct = 0
@@ -83,7 +83,7 @@ def val_step(model, valloader, loss, device):
 
             # Forward pass
             _, _, _, _, _, _, _, _, _, outputs = model(inputs)
-            loss = loss(outputs, labels)
+            loss = lossfn(outputs, labels)
 
             total_loss += loss.item()
             _, predicted = torch.max(outputs.data, 1) # get the index of the max log-probability
