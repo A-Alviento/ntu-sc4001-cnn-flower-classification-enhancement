@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import random
 import numpy as np
+from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import os
 from tqdm import tqdm 
@@ -53,14 +54,20 @@ class CustomTransform:
 
         return tensor_img
 
-# transform = transforms.Compose([
-#     transforms.ToTensor(), # convert image to tensor
-#     # standardise the dimensions of the image to 100x100
-#     transforms.Resize((100, 100)),
-#     # normalise the image by setting the mean and std to 0.5
-#     transforms.Normalize(mean=0.5, std=0.5)
-# ])
 
+# get mean rgb values of training dataset
+def get_mean_rgb(train_dataset):
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True) # this is a dataloader that loads one image at a time
+    mean = torch.zeros(3) # initialise mean tensor
+
+    for i, (x, y) in enumerate(train_loader):
+        mean += x.mean(dim=(0,2,3)) # sum up the mean of each channel
+    mean /= len(train_dataset) # divide by number of images
+
+    return mean
+
+
+# set random seed
 def set_seed(seed = 0):
     '''
     set random seed
