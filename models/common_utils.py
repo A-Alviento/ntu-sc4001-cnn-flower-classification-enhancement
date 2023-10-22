@@ -7,6 +7,10 @@ from torchvision import datasets, transforms
 import os
 from tqdm import tqdm 
 import time  
+from PIL import Image
+import cv2
+import numpy as np
+
 
 transform = transforms.Compose([
     transforms.ToTensor(), # convert image to tensor
