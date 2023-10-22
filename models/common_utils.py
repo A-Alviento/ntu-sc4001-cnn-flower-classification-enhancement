@@ -11,14 +11,55 @@ from PIL import Image
 import cv2
 import numpy as np
 
+class CustomTransform:
+    def __init__(self, mean_rgb):
+        self.mean_rgb = mean_rgb
 
-transform = transforms.Compose([
-    transforms.ToTensor(), # convert image to tensor
-    # standardise the dimensions of the image to 100x100
-    transforms.Resize((100, 100)),
-    # normalise the image by setting the mean and std to 0.5
-    transforms.Normalize(mean=0.5, std=0.5)
-])
+    def __call__(self, image):
+        # convert pil image to numpy array
+        image = np.array(image)
+
+        # get saliency map
+        saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
+        (success, saliency_map) = saliency.computeSaliency(image)
+        saliency_map = (saliency_map * 255).astype("uint8")
+
+        # get luminance map
+        lab_image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        l_channel, a_channel, b_channel = cv2.split(lab_image)
+        luminance_map = l_channel / 255.0
+
+        combined_map = saliency_map * luminance_map
+
+
+        # Find the most salient square patch coordinates (x, y, w, h)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(combined_map)
+        w, h = int(image.shape[1] * 0.8), int(image.shape[0] * 0.8)  # 80% of the original dimensions
+        x = max(max_loc[0] - w // 2, 0)
+        y = max(max_loc[1] - h // 2, 0)
+
+        # Crop and resize the image to 100x100
+        cropped_resized_img = Image.fromarray(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2RGB)).resize((100, 100), Image.ANTIALIAS)
+
+        
+        # Convert to tensor
+        tensor_img = transforms.ToTensor()(cropped_resized_img)
+        
+        # Subtract mean RGB values
+        tensor_img -= self.mean_rgb.clone().detach().view(3, 1, 1)
+        # clip to [0, 1]
+        tensor_img = torch.clamp(tensor_img, 0, 1)
+
+
+        return tensor_img
+
+# transform = transforms.Compose([
+#     transforms.ToTensor(), # convert image to tensor
+#     # standardise the dimensions of the image to 100x100
+#     transforms.Resize((100, 100)),
+#     # normalise the image by setting the mean and std to 0.5
+#     transforms.Normalize(mean=0.5, std=0.5)
+# ])
 
 def set_seed(seed = 0):
     '''
