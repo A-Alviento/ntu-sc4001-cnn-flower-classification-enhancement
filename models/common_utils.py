@@ -5,6 +5,8 @@ import random
 import numpy as np
 from torchvision import datasets, transforms
 import os
+from tqdm import tqdm 
+import time  
 
 transform = transforms.Compose([
     transforms.ToTensor(), # convert image to tensor
@@ -43,27 +45,28 @@ class EarlyStopper:
         return False # continue training
 
 
-# Training step
+# Train step
 def train_step(model, trainloader, optimizer, device, lossfn):
-    model.train() # set model to training mode
-    total_loss = 0.0 
+    model.train()  # set model to training mode
+    total_loss = 0.0
 
     # Iterate over the training data
-    for i, data in enumerate(trainloader, 0):
-        inputs, labels = data # get the inputs and labels
-        inputs, labels = inputs.to(device), labels.to(device) # move them to the device
+    for i, data in trainloader:
+        inputs, labels = data  # get the inputs and labels
+        inputs, labels = inputs.to(device), labels.to(device)  # move them to the device
 
-        optimizer.zero_grad() # zero the gradients
+        optimizer.zero_grad()  # zero the gradients
 
         # Forward pass
         _, _, _, _, _, _, _, _, _, outputs = model(inputs)
-        loss = lossfn(outputs, labels) 
+        loss = lossfn(outputs, labels)
 
-        # Backward pass and optimization
+        # Backward pass and optimisation
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item() # accumulate the loss
+        total_loss += loss.item()  # accumulate the loss
+        trainloader.set_postfix({'Training loss': '{:.4f}'.format(total_loss/(i+1))})  # Update the progress bar with the training loss
 
     train_loss = total_loss / len(trainloader)
     return train_loss
@@ -106,15 +109,24 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path):
     val_loss_list = []
     val_acc_list = []
 
-    for epoch in range(epochs): # loop over the dataset multiple times
-        train_loss = train_step(model, tl, opt, device, loss)
+    for epoch in range(epochs):  # loop over the dataset multiple times
+        start_time = time.time()  # Record the start time of the epoch
+
+        # Wrap the trainloader with tqdm for the progress bar
+        pbar = tqdm(enumerate(tl), total=len(tl), desc=f"Epoch {epoch+1}/{epochs}")
+
+        train_loss = train_step(model, pbar, opt, device, loss)  # Pass the tqdm-wrapped loader
         val_loss, val_acc = val_step(model, vl, loss, device)
 
         train_loss_list.append(train_loss)
         val_loss_list.append(val_loss)
         val_acc_list.append(val_acc)
 
-        print(f'Epoch {epoch+1}/{epochs} | Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} | Val accuracy: {val_acc:.2f}%')
+        # Print time taken for epoch
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        print(f'Epoch {epoch+1}/{epochs} took {elapsed_time:.2f}s | Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} | Val accuracy: {val_acc:.2f}% | EarlyStopper count: {early_stopper.counter}')
 
         # save as last_model after every epoch
         save_model(model, os.path.join(path, 'last_model.pt'))
@@ -122,7 +134,7 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path):
         # save as best_model if validation loss is lower than previous best validation loss
         if val_loss < early_stopper.min_validation_loss:
             save_model(model, os.path.join(path, 'best_model.pt'))
-        
+
         if early_stopper.early_stop(val_loss):
             print('Early stopping')
             break
