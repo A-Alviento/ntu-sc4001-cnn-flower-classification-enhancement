@@ -4,6 +4,7 @@ import torch.optim as optim
 import random
 import numpy as np
 from torchvision import datasets, transforms
+import os
 
 transform = transforms.Compose([
     transforms.ToTensor(), # convert image to tensor
@@ -95,9 +96,12 @@ def val_step(model, valloader, loss, device):
 
     return val_loss, accuracy
 
+# Save model
+def save_model(model, path):
+    torch.save(model.state_dict(), path)
 
 # Training loop
-def train(model, tl, vl, opt, loss, device, epochs, early_stopper):
+def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path):
     train_loss_list = []
     val_loss_list = []
     val_acc_list = []
@@ -112,6 +116,13 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper):
 
         print(f'Epoch {epoch+1}/{epochs} | Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} | Val accuracy: {val_acc:.2f}%')
 
+        # save as last_model after every epoch
+        save_model(model, os.path.join(path, 'last_model.pt'))
+
+        # save as best_model if validation loss is lower than previous best validation loss
+        if val_loss < early_stopper.min_validation_loss:
+            save_model(model, os.path.join(path, 'best_model.pt'))
+        
         if early_stopper.early_stop(val_loss):
             print('Early stopping')
             break
@@ -119,6 +130,3 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper):
     return train_loss_list, val_loss_list, val_acc_list
 
 
-# Save model
-def save_model(model, path):
-    torch.save(model.state_dict(), path)
