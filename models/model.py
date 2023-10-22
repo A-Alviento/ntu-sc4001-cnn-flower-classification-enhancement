@@ -23,7 +23,7 @@ class CustomCNN(nn.Module):
         
         # Dynamic Fully Connected Layers
         self.fcs = nn.ModuleList() # create a list of fully connected layers
-        input_size = 12*12*512 # input size of the first fully connected layer
+        input_size = 5*5*512 # input size of the first fully connected layer
 
         # Add the fully connected layers to the list    
         for width in fcn_width:
@@ -56,7 +56,7 @@ class CustomCNN(nn.Module):
         # Fifth Convolutional Layer
         conv5 = F.relu(self.conv5(conv4))
         p5 = F.max_pool2d(conv5, 3, stride=2)
-        
+
         # Flattening before Fully Connected Layers
         flatten = self.flatten(p5)
         
