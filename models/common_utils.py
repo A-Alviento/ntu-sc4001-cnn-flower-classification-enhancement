@@ -3,6 +3,15 @@ import torch.nn as nn
 import torch.optim as optim
 import random
 import numpy as np
+from torchvision import datasets, transforms
+
+transform = transforms.Compose([
+    transforms.ToTensor(), # convert image to tensor
+    # standardise the dimensions of the image to 100x100
+    transforms.Resize((100, 100)),
+    # normalise the image by setting the mean and std to 0.5
+    transforms.Normalize(mean=0.5, std=0.5)
+])
 
 def set_seed(seed = 0):
     '''
@@ -85,3 +94,31 @@ def val_step(model, valloader, loss, device):
     accuracy = 100 * correct / total
 
     return val_loss, accuracy
+
+
+# Training loop
+def train(model, tl, vl, opt, loss, device, epochs, early_stopper):
+    train_loss_list = []
+    val_loss_list = []
+    val_acc_list = []
+
+    for epoch in range(epochs): # loop over the dataset multiple times
+        train_loss = train_step(model, tl, opt, device, loss)
+        val_loss, val_acc = val_step(model, vl, loss, device)
+
+        train_loss_list.append(train_loss)
+        val_loss_list.append(val_loss)
+        val_acc_list.append(val_acc)
+
+        print(f'Epoch {epoch+1}/{epochs} | Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} | Val accuracy: {val_acc:.2f}%')
+
+        if early_stopper.early_stop(val_loss):
+            print('Early stopping')
+            break
+
+    return train_loss_list, val_loss_list, val_acc_list
+
+
+# Save model
+def save_model(model, path):
+    torch.save(model.state_dict(), path)
