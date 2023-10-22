@@ -7,7 +7,7 @@ _build/
 data/
 flake.lock
 flake.nix
-/models/baseline_model/
+/models/saved_models/
 
 # Allow .gitkeep in data directory to keep the project structure
 !data/.gitkeep
