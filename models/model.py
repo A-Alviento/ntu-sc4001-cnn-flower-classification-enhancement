@@ -60,17 +60,15 @@ class CustomCNN(nn.Module):
         # Flattening before Fully Connected Layers
         flatten = self.flatten(p5)
         
-        # First Fully Connected Layer
-        x = F.relu(self.fc1(flatten))
-        x = self.dropout(x)
-        
-        # Second Fully Connected Layer
-        x = F.relu(self.fc2(x))
-        x = self.dropout(x)
-        
-        # Third Fully Connected Layer
-        x = self.fc3(x)
-        
+        # Dynamic Fully Connected Layers
+        for fc in self.fcs:
+            x = F.relu(fc(flatten))
+            x = self.dropout(x)
+            flatten = x  # Update flatten for the next layer
+
+         # Output layer
+        x = self.fc_final(flatten)
+
         # Softmax applied to the output layer
         out = F.softmax(x, dim=1)
         
