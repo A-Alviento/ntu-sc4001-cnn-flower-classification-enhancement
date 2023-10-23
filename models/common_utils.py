@@ -129,7 +129,6 @@ def val_step(model, valloader, lossfn, device):
     model.eval() # set model to evaluation mode
     total_loss = 0.0
     correct = 0
-    total = 0
 
     with torch.no_grad(): # disable gradient calculation
         for data in valloader:
@@ -143,11 +142,10 @@ def val_step(model, valloader, lossfn, device):
             total_loss += loss.item()
             _, predicted = torch.max(outputs.data, 1) # get the index of the max log-probability
 
-            total += labels.size(0) # accumulate total number of labels
             correct += (predicted == labels).sum().item() # accumulate correct predictions
 
     val_loss = total_loss / len(valloader)
-    accuracy = 100 * correct / total
+    accuracy = 100 * correct / len(valloader.dataset)
 
     return val_loss, accuracy
 
