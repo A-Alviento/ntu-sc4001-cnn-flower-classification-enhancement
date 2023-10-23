@@ -110,7 +110,7 @@ def train_step(model, trainloader, optimizer, device, lossfn):
         optimizer.zero_grad()  # zero the gradients
 
         # Forward pass
-        _, _, _, _, _, _, _, _, _, outputs = model(inputs)
+        _, _, _, _, _, _, _, _, _, _, _, outputs = model(inputs)
         loss = lossfn(outputs, labels)
 
         # Backward pass and optimisation
@@ -136,7 +136,7 @@ def val_step(model, valloader, lossfn, device):
             inputs, labels = inputs.to(device), labels.to(device) # move them to the device
 
             # Forward pass
-            _, _, _, _, _, _, _, _, _, outputs = model(inputs)
+            _, _, _, _, _, _, _, _, _, _, _, outputs = model(inputs)
             loss = lossfn(outputs, labels)
 
             total_loss += loss.item()
