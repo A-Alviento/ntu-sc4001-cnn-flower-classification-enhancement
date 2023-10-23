@@ -34,16 +34,21 @@ class CustomCNN(nn.Module):
         
         # Dropout
         self.dropout = nn.Dropout(dropout_rate) 
+
+        # local response normalization
+        self.lrn = nn.LocalResponseNorm(5, 0.0001, 0.75, 2)
         
     def forward(self, x):
         
         # First Convolutional Layer
         conv1 = F.relu(self.conv1(x))
-        p1 = F.max_pool2d(conv1, 3, stride=2)
+        conv1_lrn = self.lrn(conv1)
+        p1 = F.max_pool2d(conv1_lrn, 3, stride=2)
         
         # Second Convolutional Layer
         conv2 = F.relu(self.conv2(p1))
-        p2 = F.max_pool2d(conv2, 3, stride=2)
+        conv2_lrn = self.lrn(conv2)
+        p2 = F.max_pool2d(conv2_lrn, 3, stride=2)
         
         # Third Convolutional Layer
         conv3 = F.relu(self.conv3(p2))
