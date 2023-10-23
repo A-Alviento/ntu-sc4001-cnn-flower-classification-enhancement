@@ -77,7 +77,7 @@ class CustomCNN(nn.Module):
         # Softmax applied to the output layer
         out = x
         
-        return conv1, p1, conv2, p2, conv3, p3, conv4, conv5, p5, out
+        return conv1, conv1_lrn, p1, conv2, conv2_lrn, p2, conv3, p3, conv4, conv5, p5, out
 
 
 
