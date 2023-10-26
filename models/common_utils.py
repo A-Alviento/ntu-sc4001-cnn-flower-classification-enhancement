@@ -32,7 +32,6 @@ class CustomTransform:
 
         combined_map = saliency_map * luminance_map
 
-
         # Find the most salient square patch coordinates (x, y, w, h)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(combined_map)
         w, h = int(image.shape[1] * 0.8), int(image.shape[0] * 0.8)  # 80% of the original dimensions
@@ -42,7 +41,6 @@ class CustomTransform:
         # Crop and resize the image to 100x100
         cropped_resized_img = Image.fromarray(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2RGB)).resize((100, 100), Image.ANTIALIAS)
 
-        
         # Convert to tensor
         tensor_img = transforms.ToTensor()(cropped_resized_img)
         
@@ -50,7 +48,6 @@ class CustomTransform:
         tensor_img -= self.mean_rgb.clone().detach().view(3, 1, 1)
         # clip to [0, 1]
         tensor_img = torch.clamp(tensor_img, 0, 1)
-
 
         return tensor_img
 
@@ -109,8 +106,7 @@ def train_step(model, trainloader, optimizer, device, lossfn):
 
         optimizer.zero_grad()  # zero the gradients
 
-        # Forward pass
-        _, _, _, _, _, _, _, _, _, _, _, outputs = model(inputs)
+        outputs = model(inputs)
         loss = lossfn(outputs, labels)
 
         # Backward pass and optimisation
@@ -135,8 +131,7 @@ def val_step(model, valloader, lossfn, device):
             inputs, labels = data # get the inputs and labels
             inputs, labels = inputs.to(device), labels.to(device) # move them to the device
 
-            # Forward pass
-            _, _, _, _, _, _, _, _, _, _, _, outputs = model(inputs)
+            outputs = model(inputs)
             loss = lossfn(outputs, labels)
 
             total_loss += loss.item()
