@@ -51,6 +51,33 @@ class CustomTransform:
 
         return tensor_img
 
+# If not lossy, then try to pad missing region with part of the message
+# Eitherwise, just cut it off
+class CustomRegularizeTransform:
+    def __init__(self, lossy=False):
+        self.lossy = lossy
+
+    def __call__(self, image):
+        image = np.array(image)
+        h, w, _ = image.shape
+        ret = None
+
+        if self.lossy:
+            m = min(h, w)
+            ret = image[0:m, 0:m, :]
+        else:
+            d = np.abs(w - h)
+            s = (w - h)//2
+            a = d % 2
+            if h == w:
+                ret = image
+                
+            elif h < w:
+                ret = np.concatenate((image[0:s+a, :, :], image, image[-s:, :, :]), axis=0)
+            else:
+                ret = np.concatenate((image[:, 0:s+a, :], image, image[:, -s:, ]), axis=1)
+
+        return ret
 
 # get mean rgb values of training dataset
 def get_mean_rgb(train_dataset):
