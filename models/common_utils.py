@@ -11,6 +11,7 @@ import time
 from PIL import Image
 import cv2
 import numpy as np
+import torch.nn.functional as F
 
 class CustomTransform:
     def __init__(self, mean_rgb):
@@ -32,14 +33,10 @@ class CustomTransform:
 
         combined_map = saliency_map * luminance_map
 
-        # Find the most salient square patch coordinates (x, y, w, h)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(combined_map)
-        w, h = int(image.shape[1] * 0.8), int(image.shape[0] * 0.8)  # 80% of the original dimensions
-        x = max(max_loc[0] - w // 2, 0)
-        y = max(max_loc[1] - h // 2, 0)
+        y_0, y_1, x_0, x_1 = find_bounding_box(combined_map)
 
         # Crop and resize the image to 100x100
-        cropped_resized_img = Image.fromarray(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2RGB)).resize((100, 100), Image.ANTIALIAS)
+        cropped_resized_img = Image.fromarray(image[y_0:y_1, x_0:x_1]).resize((100, 100), Image.ANTIALIAS)
 
         # Convert to tensor
         tensor_img = transforms.ToTensor()(cropped_resized_img)
@@ -50,6 +47,54 @@ class CustomTransform:
         tensor_img = torch.clamp(tensor_img, 0, 1)
 
         return tensor_img
+
+
+# Generate a kernel where the center is focused
+def center_focused_kernel(v, exp_factor = 0.5):
+    x, y = torch.meshgrid(torch.linspace(-1, 1, v, dtype=torch.float64),
+                          torch.linspace(-1, 1, v, dtype=torch.float64))
+    distance = torch.exp(np.sqrt(x**2 + y**2))
+    kernel = torch.exp(-1 * exp_factor * distance)
+    kernel /= kernel.max()
+    
+    return kernel
+
+
+# Find a square bounding box of combined_map
+def find_bounding_box(combined_map, conv_stride = 50):
+    w, h = combined_map.shape
+    v = min(w, h)
+    combined_map_torch = torch.tensor(combined_map).view(1, 1, w, h)
+
+    max_value = -1 * np.inf
+    y_0, y_1, x_0, x_1 = None, None, None, None
+    
+    # start from smallest of width and height and decrease by -25 until 200 pixels
+    for v in range(min(w,h), 100-1, -100):
+        kernel = center_focused_kernel(v)
+        kernel = kernel.view(1, 1, v, v) / ( v * v )
+        res = F.conv2d(combined_map_torch, kernel, stride = conv_stride)
+        
+        _, _, t1, t2 = res.shape
+        res = res.reshape(t1, t2)
+
+        curr_max = torch.max(res)
+
+        # Penalise small bounding boxes
+        curr_value = curr_max * (v / w)
+        
+        if curr_value > max_value:
+            max_value = curr_value
+            t = (res == curr_max).nonzero()
+
+            y_0 = t[0, 0].item()
+            y_1 = y_0 + v
+            
+            x_0 = t[0, 1].item()
+            x_1 = x_0 + v
+
+        
+    return y_0, y_1, x_0, x_1
 
 
 # get mean rgb values of training dataset
