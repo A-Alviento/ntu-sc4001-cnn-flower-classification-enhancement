@@ -70,7 +70,7 @@ class CustomCNN(nn.Module):
             nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, groups=512),
             nn.Conv2d(512, 512, kernel_size=1),
             nn.ReLU(),
-            nn.MaxPool2d(3, stride=2),     
+            nn.MaxPool2d(3, stride=2),    
         )
 
         self.fcn_stack = nn.Sequential(
@@ -81,6 +81,7 @@ class CustomCNN(nn.Module):
             *fcn_list,
             
             # output layer
+            nn.BatchNorm1d(input_size, momentum=batch_norm_moment),
             nn.Linear(input_size, num_classes),
         )
 
