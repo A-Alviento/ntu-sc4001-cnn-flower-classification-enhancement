@@ -31,6 +31,7 @@ class CustomCNN(nn.Module):
         self.conv_stack = nn.Sequential(
             ## Convolutional Layers
             # takes an input with 3 channels, applies 64 kernels of size 5x5 and outputs 64 feature map
+            nn.BatchNorm2d(3, momentum=None),  # Use total running average
             ## nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2),
             nn.Conv2d(3, 3, kernel_size=5, stride=1, padding=2, groups=3),
             nn.Conv2d(3, 64, kernel_size=1),
