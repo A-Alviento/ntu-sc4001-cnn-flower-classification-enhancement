@@ -6,3 +6,4 @@ scipy
 torch
 torchvision
 opencv-contrib-python
+tqdm
