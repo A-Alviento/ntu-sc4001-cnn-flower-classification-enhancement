@@ -16,6 +16,8 @@ class CustomCNN(nn.Module):
 
         super(CustomCNN, self).__init__()
 
+        self.pinned_layers = []
+        
         # Initialise the fully connected layers, so that we can unpack it in nn.Sequential
         fcn_list = []
         input_size = 5 * 5 * 512
@@ -34,43 +36,43 @@ class CustomCNN(nn.Module):
             nn.BatchNorm2d(3, momentum=None),  # Use total running average
             ## nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2),
             nn.Conv2d(3, 3, kernel_size=5, stride=1, padding=2, groups=3),
-            nn.Conv2d(3, 64, kernel_size=1),
+            self.pin(nn.Conv2d(3, 64, kernel_size=1)),
             nn.ReLU(),
-            nn.LocalResponseNorm(5, 0.0001, 0.75, 2),
-            nn.MaxPool2d(3, stride=2),
+            self.pin(nn.LocalResponseNorm(5, 0.0001, 0.75, 2)),
+            self.pin(nn.MaxPool2d(3, stride=2)),
         
             # takes an input with 64 channels, applies 128 kernels of size 5x5 and outputs 128 feature map
             nn.BatchNorm2d(64, momentum=batch_norm_moment),
             ## nn.Conv2d(64, 128, kernel_size=5, stride=1, padding=2),
             nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2, groups=64),
-            nn.Conv2d(64, 128, kernel_size=1),
+            self.pin(nn.Conv2d(64, 128, kernel_size=1)),
             nn.ReLU(),
-            nn.LocalResponseNorm(5, 0.0001, 0.75, 2),
-            nn.MaxPool2d(3, stride=2),
+            self.pin(nn.LocalResponseNorm(5, 0.0001, 0.75, 2)),
+            self.pin(nn.MaxPool2d(3, stride=2)),
             
             # takes an input with 128 channels, applies 256 kernels of size 3x3 and outputs 256 feature map
             nn.BatchNorm2d(128, momentum=batch_norm_moment),
             # nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, groups=128),
-            nn.Conv2d(128, 256, kernel_size=1),
+            self.pin(nn.Conv2d(128, 256, kernel_size=1)),
             nn.ReLU(),
-            nn.MaxPool2d(3, stride=2),
+            self.pin(nn.MaxPool2d(3, stride=2)),
         
             # takes an input with 256 channels, applies 512 kernels of size 3x3 and outputs 512 feature map
             # paper details to skip the pooling layer after the fourth convolutional layer
             nn.BatchNorm2d(256, momentum=batch_norm_moment),
             # nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, groups=256),
-            nn.Conv2d(256, 512, kernel_size=1),
+            self.pin(nn.Conv2d(256, 512, kernel_size=1)),
             nn.ReLU(),
         
             # takes an input with 512 channels, applies 512 kernels of size 3x3 and outputs 512 feature map
             nn.BatchNorm2d(512, momentum=batch_norm_moment),
             # nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, groups=512),
-            nn.Conv2d(512, 512, kernel_size=1),
+            self.pin(nn.Conv2d(512, 512, kernel_size=1)),
             nn.ReLU(),
-            nn.MaxPool2d(3, stride=2),    
+            self.pin(nn.MaxPool2d(3, stride=2)),    
         )
 
         self.fcn_stack = nn.Sequential(
@@ -82,23 +84,29 @@ class CustomCNN(nn.Module):
             
             # output layer
             nn.BatchNorm1d(input_size, momentum=batch_norm_moment),
-            nn.Linear(input_size, num_classes),
+            self.pin(nn.Linear(input_size, num_classes)),
         )
 
-    
+        # Corresponding sequence of pinned layers in forward operation
+        self.pinned_indexes = [j for j, l in enumerate(chain(self.conv_stack, self.fcn_stack))
+                                    if l in self.pinned_layers]
+
+    def pin(self, layer):
+        self.pinned_layers.append(layer)
+        return layer
+
     def forward(self, x):
         return self.fcn_stack(self.conv_stack(x))
 
     # Intended only for visualization - not for training
     def forward_with_intermediates(self, x):
         # return output of convolution layers (minus relu) and the output
-        indexes = [0, 2, 3, 4, 6, 7, 8, 10, 11, 13, 15, -1]
-        ret_list = []
+        interm_list = []
         interm = x
 
         with torch.no_grad():
             for layer in chain(self.conv_stack, self.fcn_stack):
                 interm = layer(interm)
-                ret_list.append(interm)
+                interm_list.append(interm)
         
-        return tuple(ret_list[i] for i in indexes)
+        return tuple(interm_list[i] for i in self.pinned_indexes)
