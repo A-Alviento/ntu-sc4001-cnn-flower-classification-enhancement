@@ -48,10 +48,10 @@ class CustomCNN(nn.Module):
             ## Convolutional Layers
             # takes an input with 3 channels, applies 64 kernels of size 5x5 and outputs 64 feature map
             nn.BatchNorm2d(3, momentum=None),  # Use total running average
-            # DeformConv2d(3, 64, kernel_size=5, stride=1, padding=2),
+            DeformConv2d(3, 64, kernel_size=5, stride=1, padding=2),
             # nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=2),
-            nn.Conv2d(3, 3, kernel_size=5, stride=1, padding=2, groups=3),
-            self.pin(nn.Conv2d(3, 64, kernel_size=1)),
+            # nn.Conv2d(3, 3, kernel_size=5, stride=1, padding=2, groups=3),
+            # self.pin(nn.Conv2d(3, 64, kernel_size=1)),
             nn.ReLU(),
             self.pin(nn.LocalResponseNorm(5, 0.0001, 0.75, 2)),
             self.pin(nn.MaxPool2d(3, stride=2)),
