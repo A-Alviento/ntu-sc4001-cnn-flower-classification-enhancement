@@ -122,7 +122,7 @@ class EarlyStopper:
 
 
 # Train step
-def train_step(model, trainloader, optimizer, device, lossfn):
+def train_step(model, trainloader, optimizer, scheduler, device, lossfn):
     model.train()  # set model to training mode
     total_loss = 0.0
 
@@ -139,9 +139,12 @@ def train_step(model, trainloader, optimizer, device, lossfn):
         # Backward pass and optimisation
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         total_loss += loss.item()  # accumulate the loss
-        trainloader.set_postfix({'Training loss': '{:.4f}'.format(total_loss/(i+1))})  # Update the progress bar with the training loss
+        trainloader.set_postfix({'Training loss': f'{total_loss/(i+1):.4f}',
+                                 'Learning rate': f'{scheduler.get_last_lr()[0]:.5f}'
+                                })  # Update the progress bar with the training loss
 
     train_loss = total_loss / len(trainloader)
     return train_loss
@@ -176,7 +179,7 @@ def save_model(model, path):
     torch.save(model.state_dict(), path)
 
 # Training loop
-def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path):
+def train(model, tl, vl, opt, scheduler,loss, device, epochs, early_stopper, path):
     train_loss_list = []
     val_loss_list = []
     val_acc_list = []
@@ -187,7 +190,7 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path):
         # Wrap the trainloader with tqdm for the progress bar
         pbar = tqdm(enumerate(tl), total=len(tl), desc=f"Epoch {epoch+1}/{epochs}")
 
-        train_loss = train_step(model, pbar, opt, device, loss)  # Pass the tqdm-wrapped loader
+        train_loss = train_step(model, pbar, opt, scheduler, device, loss)  # Pass the tqdm-wrapped loader
         val_loss, val_acc = val_step(model, vl, loss, device)
 
         train_loss_list.append(train_loss)
