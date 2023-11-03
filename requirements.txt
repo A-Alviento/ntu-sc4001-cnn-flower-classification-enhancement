@@ -2,6 +2,7 @@ ipython
 jupyter
 matplotlib
 numpy
+scikit-learn
 scipy
 torch
 torchvision
