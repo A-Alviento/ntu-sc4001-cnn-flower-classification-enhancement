@@ -9,15 +9,15 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Dataset
 
 class cnn_grad_cam(nn.Module):
-    def __init__(self, model_path, device):
+    def __init__(self, model_class, model_path, device, last_conv_layer_idx):
         super(cnn_grad_cam, self).__init__()
         
         # get the pretrained VGG19 network
-        self.cnn_grad_cam = DepthPointWiseCNN()
+        self.cnn_grad_cam = model_class
         self.cnn_grad_cam.load_state_dict(torch.load(model_path, map_location=device))
         
         # disect the network to access its last convolutional layer
-        self.features_conv = self.cnn_grad_cam.conv_stack[:25]
+        self.features_conv = self.cnn_grad_cam.conv_stack[:last_conv_layer_idx]
         
         # get the max pool of the features stem
         self.max_pool = nn.MaxPool2d(3, stride=2)
