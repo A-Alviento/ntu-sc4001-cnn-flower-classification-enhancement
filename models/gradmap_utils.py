@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 import torch as F
 import numpy as np
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader, Dataset
 
 class cnn_grad_cam(nn.Module):
     def __init__(self, model_path, device):
@@ -88,7 +90,7 @@ def get_heatmap(model, img): # ensure model is in eval mode
 
 # overlay heatmap on image
 def save_grad_map(img, heatmap, path):
-    # resize heatmap to size of image
+    # resize heatmap to size of image with aliasing
     heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
     # convert to 0-255 uint8 scale
     heatmap = np.uint8(255 * heatmap)
@@ -100,4 +102,30 @@ def save_grad_map(img, heatmap, path):
 
     # save image
     cv2.imwrite(path, superimposed_img)
+
+
+
+class CustomFlowers102(Dataset):
+    def __init__(self, root, split, download=True, transform=None):
+        self.root = root
+        self.dataset = datasets.Flowers102(root=root, split=split, download=download, transform=None)
+        self.transform = transform
+
+    def __getitem__(self, index):
+        # Get the image file path from the underlying dataset
+        img_file, _ = self.dataset._image_files[index], self.dataset._labels[index]
+
+        img, label = self.dataset[index]
+
+        # Apply the transformation
+        if self.transform:
+            img = self.transform(img)
+
+        # Return the transformed image, label, and file name
+        return img, label, str(img_file)
+
+    def __len__(self):
+        return len(self.dataset)
+
+
 
