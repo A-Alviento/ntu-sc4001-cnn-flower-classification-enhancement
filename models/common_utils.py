@@ -204,6 +204,7 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path, schedul
     val_loss_list = []
     val_acc_list = []
     train_time_list = []
+    lr_list = []
     early_stop = False
 
     for epoch in range(epochs):  # loop over the dataset multiple times
@@ -222,6 +223,7 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path, schedul
         val_loss_list.append(val_loss)
         val_acc_list.append(val_acc)
         train_time_list.append(elapsed_time)
+        lr_list.append(opt.param_groups[0]['lr'])
 
         print(f'Epoch {epoch+1}/{epochs} took {elapsed_time:.2f}s | Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} | Val accuracy: {val_acc:.2f}% | EarlyStopper count: {early_stopper.counter}')
 
@@ -237,6 +239,6 @@ def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path, schedul
             early_stop = True
             break
 
-    return train_loss_list, val_loss_list, val_acc_list, train_time_list, early_stop
+    return train_loss_list, val_loss_list, val_acc_list, train_time_list, lr_list, early_stop
 
 
