@@ -9,6 +9,7 @@ flake.lock
 flake.nix
 models/saved_models/*/*/last_model.pt
 models/saved_models/OneCycleLRTest/*/*.pt
+grad_maps/
 
 # Allow .gitkeep in data directory to keep the project structure
 !data/.gitkeep
