@@ -36,7 +36,6 @@ sc4001-project/
 │   ├── grad_map.ipynb
 │   ├── test_data.ipynb
 │   └── test_model.ipynb
-├── src/
 ├── requirements.txt
 └── report.pdf
 ```
