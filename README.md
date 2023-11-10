@@ -41,14 +41,14 @@ sc4001-project/
 └── report.pdf
 ```
 
-The `data` directory contains the Oxford Flowers 102 dataset.
+The `data` directory contains the Oxford Flowers 102 dataset. Note that the downloading will be handled by `torchvision`(in the notebooks).
 
 The `models` directory contains:
-- `saved_models`: All the models we have trained.
+- `saved_models`: The saved states of all the models we have trained. Note that we use `cuda`.
 - `saved_models/data_visualisation.ipynb`: Notebook for visualisation of various graphs (accuracy, loss, etc.).
 - `common_utils.py`: Consists of various global helper functions.
 - `gradmap_utils.py`: Consists of various helper functions for the generation of Grad-CAM in `notebooks/grad_map.ipynb`.
-- `model.py`: Consists of model architectures.
+- `model.py`: Consists of different model architectures.
 
 The `notebooks` directory contains notebooks for training various models, evaluating them, and visualising data and model performances.
 
