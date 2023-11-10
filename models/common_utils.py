@@ -39,7 +39,7 @@ class CustomTransform:
         y = max(max_loc[1] - h // 2, 0)
 
         # Crop and resize the image to 100x100
-        cropped_resized_img = Image.fromarray(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2RGB)).resize((100, 100), Image.ANTIALIAS)
+        cropped_resized_img = Image.fromarray(cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2RGB)).resize((100, 100), Image.LANCZOS)
 
         # Convert to tensor
         tensor_img = transforms.ToTensor()(cropped_resized_img)
@@ -122,7 +122,7 @@ class EarlyStopper:
 
 
 # Train step
-def train_step(model, trainloader, optimizer, scheduler, device, lossfn):
+def train_step(model, trainloader, optimizer, device, lossfn, scheduler=None):
     model.train()  # set model to training mode
     total_loss = 0.0
 
@@ -139,16 +139,20 @@ def train_step(model, trainloader, optimizer, scheduler, device, lossfn):
         # Backward pass and optimisation
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        if scheduler:
+            scheduler.step()
+            last_lr = scheduler.get_last_lr()[0]
+        else:
+            # This works for optimizers that use the same learning rate for all layers - which is most optimizers
+            last_lr = optimizer.param_groups[0]['lr']
 
         total_loss += loss.item()  # accumulate the loss
         trainloader.set_postfix({'Training loss': f'{total_loss/(i+1):.4f}',
-                                 'Learning rate': f'{scheduler.get_last_lr()[0]:.5f}'
+                                 'Learning rate': f'{last_lr:.5f}'
                                 })  # Update the progress bar with the training loss
 
     train_loss = total_loss / len(trainloader)
     return train_loss
-
 
 # Test step
 def val_step(model, valloader, lossfn, device):
@@ -174,15 +178,34 @@ def val_step(model, valloader, lossfn, device):
 
     return val_loss, accuracy
 
+def test_model(model, testloader, lossfn, device):
+    model.eval()
+
+    logits = list()
+
+    with torch.no_grad():
+        for inputs, labels in testloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            outputs = model(inputs)
+            sm_outputs = torch.softmax(outputs, dim = 1)
+
+            logits.append(sm_outputs)
+
+    return torch.cat(logits)
+
 # Save model
 def save_model(model, path):
     torch.save(model.state_dict(), path)
 
 # Training loop
-def train(model, tl, vl, opt, scheduler,loss, device, epochs, early_stopper, path):
+def train(model, tl, vl, opt, loss, device, epochs, early_stopper, path, scheduler=None):
     train_loss_list = []
     val_loss_list = []
     val_acc_list = []
+    train_time_list = []
+    lr_list = []
+    early_stop = False
 
     for epoch in range(epochs):  # loop over the dataset multiple times
         start_time = time.time()  # Record the start time of the epoch
@@ -190,16 +213,17 @@ def train(model, tl, vl, opt, scheduler,loss, device, epochs, early_stopper, pat
         # Wrap the trainloader with tqdm for the progress bar
         pbar = tqdm(enumerate(tl), total=len(tl), desc=f"Epoch {epoch+1}/{epochs}")
 
-        train_loss = train_step(model, pbar, opt, scheduler, device, loss)  # Pass the tqdm-wrapped loader
+        train_loss = train_step(model, pbar, opt, device, loss, scheduler)  # Pass the tqdm-wrapped loader
         val_loss, val_acc = val_step(model, vl, loss, device)
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
 
         train_loss_list.append(train_loss)
         val_loss_list.append(val_loss)
         val_acc_list.append(val_acc)
-
-        # Print time taken for epoch
-        end_time = time.time()
-        elapsed_time = end_time - start_time
+        train_time_list.append(elapsed_time)
+        lr_list.append(opt.param_groups[0]['lr'])
 
         print(f'Epoch {epoch+1}/{epochs} took {elapsed_time:.2f}s | Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} | Val accuracy: {val_acc:.2f}% | EarlyStopper count: {early_stopper.counter}')
 
@@ -212,8 +236,9 @@ def train(model, tl, vl, opt, scheduler,loss, device, epochs, early_stopper, pat
 
         if early_stopper.early_stop(val_loss):
             print('Early stopping')
+            early_stop = True
             break
 
-    return train_loss_list, val_loss_list, val_acc_list
+    return train_loss_list, val_loss_list, val_acc_list, train_time_list, lr_list, early_stop
 
 
