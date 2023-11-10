@@ -22,7 +22,7 @@ class cnn_grad_cam(nn.Module):
         # get the max pool of the features stem
         self.max_pool = nn.MaxPool2d(3, stride=2)
         
-        # get the classifier of the vgg19
+        # get the classifier 
         self.classifier = self.cnn_grad_cam.fcn_stack
         
         # placeholder for the gradients
