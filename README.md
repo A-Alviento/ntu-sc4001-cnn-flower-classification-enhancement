@@ -1,4 +1,7 @@
-# SC4001 Project
+# Enhancing CNN with Regularisation and Optimisation Techniques
+This repository is our SC4001 Neural Network and Deep Learning project on replicating and enhancing a Convolutional Neural Network (CNN) initially proposed by Liu et al. [1] for flower classification. The original model, trained on a custom dataset and the Oxford 102 Flower Dataset separately, was limited to 79 flower species. This project extends the model's capabilities to classify all 102 species within the Oxford dataset. We aim to establish a strong baseline model and then improve it through various methods. These improvements include batch normalisation to improve training stability, the implementation of depthwise and pointwise convolutions to optimise network efficiency, the incorporation of the MixUp technique to enhance model generalisation, and extensive data augmentation to expand the model's robustness to new data. 
+
+For the detailed implementation, refer to `report.pdf`
 
 ## Installations
 
